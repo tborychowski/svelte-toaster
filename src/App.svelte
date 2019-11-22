@@ -1,14 +1,14 @@
-<style>
-	button:focus { box-shadow: 0 0 1px 1px blue; }
-</style>
 
 <Toaster />
 
-<button on:click="">Show toast</button>
+<button on:click="{() => showToast('Hello')}">Show info</button>
+<button on:click="{() => showToast('Hello', 'warning')}">Show warning</button>
+<button on:click="{() => showToast('Hello', 'error', false)}">Show error</button>
+
 
 <script>
-import Toaster from './Toaster';
 
+import Toaster, { showToast } from './Toaster';
 
 
 </script>

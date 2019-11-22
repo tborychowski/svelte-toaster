@@ -12,11 +12,7 @@ export default {
 		file: 'dist/index.js'
 	},
 	plugins: [
-		svelte({
-			dev: true,
-			// css: css => css.write('public/build/bundle.css')
-		}),
-
+		svelte({ dev: true }),
 		resolve({
 			browser: true,
 			extensions: ['.mjs', '.js', '.json', '.svelte'],
@@ -24,7 +20,5 @@ export default {
 		}),
 		commonjs(),
 	],
-	watch: {
-		clearScreen: false
-	}
+	watch: { clearScreen: false }
 };
