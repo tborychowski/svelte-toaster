@@ -1,8 +1,7 @@
 <style>
 .toaster {
 	position: fixed;
-	top: 0;
-	width: 300px;
+	width: 400px;
 	left: 50%;
 	transform: translateX(-50%);
 	padding-top: 5px;
@@ -12,53 +11,114 @@
 	user-select: none;
 	z-index: 90;
 }
+.toaster-top { top: 0; }
+.toaster-bottom { bottom: 0; }
 .toast {
+	position: relative;
+	overflow: hidden;
 	flex: 1;
 	margin-top: 5px;
 	margin-bottom: 5px;
-	padding: 20px 50px;
 	text-align: center;
-	box-shadow: 0 10px 20px 2px #0003;
-	color: #333;
+	box-shadow: 0 10px 20px 2px rgba(0,0,0,0.2);
 	z-index: 10;
-	cursor: pointer;
+	font-size: 15px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 30px;
+	border-radius: 25px;
 }
+.toast button {
+	background: none;
+	border: none;
+	color: #eee;
+	height: 30px;
+	min-width: 38px;
+	padding: 0 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color .2s;
+}
+.toast button:hover { color: #fff; background: #3338; }
+.toast button:active { color: #bbb; background: #0008; }
+
+.toast .toast-close {
+	font-size: 22px;
+	font-weight: 200;
+	border-radius: 0 25px 25px 0;
+	position: relative;
+	padding-bottom: 3px;
+}
+
 .toast,
-.toast-info { background: #739ac9; }
-.toast-warning { background: #d4b472; }
-.toast-error { background: #d3767f; }
+.toast-info { background: #666d7b; }
+.toast-warning { background: #af8a1a; }
+.toast-error { background: #8b4848; }
+.toast-msg { color: #eee; flex: 1; }
+.toast-progressbar {
+	position: absolute;
+	bottom: 1px;
+	left: 0;
+	right: 0;
+	height: 3px;
+	border-radius: 5px;
+}
+.toast-progress {
+	height: 100%;
+	border-radius: 5px;
+	background-color: #eee;
+	width: 0;
+	transition: width 0.2s;
+}
 </style>
 
-<div class="toaster">
+<div class="toaster toaster-{position}">
 	{#each toasts as toast (toast.id)}
-		<div class="toast toast-{toast.type}"
-			class:gone="{toast.gone}"
-			in:fly="{{y: -100, duration: 200 }}"
-			out:fly="{{ y: -100, duration: 400 }}"
-			on:outrostart="{e => e.target.style.zIndex = 5}"
-			animate:flip="{{ duration: 200 }}"
-			on:click="{() => hideToast(toast.id)}">{toast.msg}</div>
+		<div class="toast toast-{toast.type}" transition:fade
+			on:click|preventDefault="{e => toast.cb(e, toast.id)}">
+				<div class="toast-msg">{@html toast.msg}</div>
+				{#if toast.btn}
+					<button>{toast.btn}</button>
+				{/if}
+				<button class="toast-close" on:click|stopPropagation="{() => hideToast(toast.id)}">&times;</button>
+				{#if toast.showProgress}
+					<div class="toast-progressbar">
+						<div class="toast-progress" style="width: {progress[toast.id]}%"></div>
+					</div>
+				{/if}
+			</div>
 	{/each}
 </div>
 
 
 <script context="module">
-import { writable, get } from 'svelte/store';
-import { fly } from 'svelte/transition';
-import { flip } from 'svelte/animate';
+import { writable } from 'svelte/store';
+import { fade } from 'svelte/transition';
 
-let _toasts = writable([]);
+const _toasts = writable({});
 
-export function showToast (msg, type = 'info', timeout = 5000) {
+export function showToast (msg, type = 'info', timeout = 5000, btn, cb = () => {}) {
 	const id = guid();
-	_toasts.set([...get(_toasts), { type, msg, id }]);
-	if (typeof timeout === 'number') setTimeout(() => hideToast(id), timeout);
+	let showProgress = false;
+	if (typeof timeout === 'number') {
+		setTimeout(() => hideToast(id), timeout);
+		showProgress = true;
+		timeout = timeout - 500;
+	}
+	_toasts.update(list => {
+		list[id] = { type, msg, id, timeout, cb, showProgress, btn };
+		return list;
+	});
 	return id;
 }
 
 export function hideToast (id) {
-	const filtered = get(_toasts).filter(t => t.id !== id);
-	_toasts.set(filtered);
+	_toasts.update(list => {
+		delete list[id];
+		return list;
+	});
 }
 
 function guid () {
@@ -69,7 +129,23 @@ function guid () {
 	});
 }
 </script>
+
 <script>
-let toasts = [];
-_toasts.subscribe(val => toasts = val);
+export let position = 'top';
+let toasts = [], timers = {}, progress = {};
+
+_toasts.subscribe(val => {
+	toasts = Object.values(val);
+	toasts.forEach(t => {
+		if (!timers[t.id]) createTimer(t.id, t.timeout);
+	});
+});
+
+function createTimer (id, timeout) {
+	progress[id] = 0;
+	timers[id] = setInterval(() => {
+		progress[id] += 1;
+		if (progress[id] >= 100) clearInterval(timers[id]);
+	}, timeout / 100);
+}
 </script>
