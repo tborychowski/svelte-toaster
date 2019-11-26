@@ -60,15 +60,17 @@
 .toast-progressbar {
 	position: absolute;
 	bottom: 1px;
-	left: 0;
-	right: 0;
-	height: 3px;
-	border-radius: 5px;
+	left: 1px;
+	right: 1px;
+	top: 1px;
+	border-radius: 25px;
+	overflow: hidden;
+	z-index: -1;
 }
 .toast-progress {
 	height: 100%;
-	border-radius: 5px;
-	background-color: #eee;
+	border-radius: 25px;
+	background-color: #fff1;
 	width: 0;
 	transition: width 0.2s;
 }
@@ -76,7 +78,8 @@
 
 <div class="toaster toaster-{position}">
 	{#each toasts as toast (toast.id)}
-		<div class="toast toast-{toast.type}" transition:fade
+		<div class="toast toast-{toast.type}"
+			transition:scale="{{ start: 0.5 }}"
 			on:click|preventDefault="{e => toast.cb(e, toast.id)}">
 				<div class="toast-msg">{@html toast.msg}</div>
 				{#if toast.btn}
@@ -95,7 +98,7 @@
 
 <script context="module">
 import { writable } from 'svelte/store';
-import { fade } from 'svelte/transition';
+import { scale } from 'svelte/transition';
 
 const _toasts = writable({});
 
